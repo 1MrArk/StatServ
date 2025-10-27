@@ -9,6 +9,7 @@ services:
       - mongo
     environment:
       - MONGO_URI=mongodb://mongo:27017/statdb
+      - PASSWORD=admin
     restart: always
 
   mongo:

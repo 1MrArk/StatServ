@@ -13,11 +13,12 @@ key = str(random.SystemRandom().getrandbits(128))
 app.config['SECRET_KEY'] = key
 print(key)
 key = 'used'
-
+password = os.getenv('PASSWORD')
 #creating database
 client = MongoClient(os.getenv('MONGO_URI', 'mongodb://statserv-mongo:27017/'))
 statdb = client['statdb']
 stat_collection = statdb['stats']
+prog_collection = statdb['progress']
 @app.route('/')
 def hello_world():  # put application's code here
     return 'Hello World!'
@@ -40,7 +41,7 @@ def auth():
         return make_response(token)
     elif role == 'admin':
         auth = request.args.get('password')
-        if auth == "admin":
+        if auth == password:
             token = jwt.encode({'user' : host, 'role' : 'admin'}, app.config['SECRET_KEY'])
             return make_response(token)
         return make_response('Authentication denied', 401)
@@ -51,11 +52,22 @@ def auth():
 def client():
     data = request.get_json()
     host = data.get('host')
-    if stat_collection.find_one({'host' : host}) is None:
-        stat_collection.insert_one(request.get_json())
+    type = request.args.get('data')
+    print('Incoming data type:', request.args.get('data'))
+    if type == 'stats':
+        if stat_collection.find_one({'host': host}) is None:
+            stat_collection.insert_one(request.get_json())
+        else:
+            update_operation = {'$set': data}
+            stat_collection.update_one({'host': host}, update_operation)
+    elif type == 'prog':
+        if prog_collection.find_one({'host': host}) is None:
+            prog_collection.insert_one(request.get_json())
+        else:
+            update_operation = {'$set': data}
+            prog_collection.update_one({'host': host}, update_operation)
     else:
-        update_operation = {'$set': data}
-        stat_collection.update_one({'host' : host}, update_operation)
+        return make_response('Invalid request', 401)
     return {'message': 'Info received!'}
 
 @app.route('/admin', methods=['GET'])
@@ -64,9 +76,13 @@ def admin():
     func = request.args.get('action')
     match func:
         case 'view_all':
-            results = list(stat_collection.find())
-            print(stat_collection.full_name, list(stat_collection.find()))
-            return json.dumps(results, default=str)
+            stats = list(stat_collection.find())
+            prog = list(prog_collection.find())
+            combined = {
+                "stats": stats,
+                "prog": prog
+            }
+            return json.dumps(combined, default=str)
         case 'view_user':
             try:
                 print(request.args.get('user'))
@@ -76,7 +92,8 @@ def admin():
                 return jsonify({'code': 404})
         case 'delete_user':
             try:
-                result = stat_collection.delete_one({'host' : request.args.get('user')})
+                prog_collection.delete_one({'host' : request.args.get('user')})
+                stat_collection.delete_one({'host' : request.args.get('user')})
                 return jsonify({'message': 'User deleted!'})
             except Exception:
                 return jsonify({'message': 'User does not exist!'})
