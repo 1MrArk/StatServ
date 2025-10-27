@@ -1,10 +1,11 @@
 import json
 import os
+import random
 from functools import wraps
 from flask import Flask, request, make_response, jsonify
 from pymongo import MongoClient
 import jwt
-import random
+
 
 app = Flask(__name__)
 
@@ -20,13 +21,15 @@ statdb = client['statdb']
 stat_collection = statdb['stats']
 prog_collection = statdb['progress']
 @app.route('/')
-def hello_world():  # put application's code here
+def hello_world():
+    """Route for testing purposes"""
     return 'Hello World!'
 def token_check(f):
+    """Decorator to check if token is valid"""
     @wraps(f)
     def guard(*args, **kwargs):
+        """Check if token is valid"""
         token = request.args.get('token')
-        role = request.args.get('role')
         if token is None:
             return make_response('Token is missing', 401)
         jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
@@ -34,33 +37,34 @@ def token_check(f):
     return guard
 @app.route('/auth', methods=['POST'])
 def auth():
+    """Authenticating user and assigning token"""
     host = request.args.get('host')
     role = request.args.get('role')
     if role == 'script':
         token = jwt.encode({'user' : host, 'role' : 'script'}, app.config['SECRET_KEY'])
         return make_response(token)
-    elif role == 'admin':
-        auth = request.args.get('password')
-        if auth == password:
+    if role == 'admin':
+        ath = request.args.get('password')
+        if ath == password:
             token = jwt.encode({'user' : host, 'role' : 'admin'}, app.config['SECRET_KEY'])
             return make_response(token)
         return make_response('Authentication denied', 401)
-    else:
-        return make_response('Authentication denied', 401)
+    return make_response('Authentication denied', 401)
 @app.route('/client', methods=['POST'])
 @token_check
 def client():
+    """Receiving info from script and putting it into DB"""
     data = request.get_json()
     host = data.get('host')
-    type = request.args.get('data')
+    tp = request.args.get('data')
     print('Incoming data type:', request.args.get('data'))
-    if type == 'stats':
+    if tp == 'stats':
         if stat_collection.find_one({'host': host}) is None:
             stat_collection.insert_one(request.get_json())
         else:
             update_operation = {'$set': data}
             stat_collection.update_one({'host': host}, update_operation)
-    elif type == 'prog':
+    elif tp == 'prog':
         if prog_collection.find_one({'host': host}) is None:
             prog_collection.insert_one(request.get_json())
         else:
@@ -73,6 +77,7 @@ def client():
 @app.route('/admin', methods=['GET'])
 @token_check
 def admin():
+    """Route for admin functions"""
     func = request.args.get('action')
     match func:
         case 'view_all':
@@ -87,7 +92,8 @@ def admin():
             try:
                 print(request.args.get('user'))
                 print(stat_collection.find_one({'host' : request.args.get('user')}))
-                return json.dumps(stat_collection.find_one({'host' : request.args.get('user')}), default=str)
+                return json.dumps(stat_collection.find_one({'host' : request.args.get('user')}),
+                                  default=str)
             except:
                 return jsonify({'code': 404})
         case 'delete_user':
