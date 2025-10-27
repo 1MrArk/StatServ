@@ -18,6 +18,10 @@ Server is up and running! As for the client:
 3. Install required dependencies: `pip install -r requirements.txt`
 3. Launch it in terminal: `python script.py`
 
+I also included admin script to view information kept on the server DB. To launch it:
+1. Install dependencies
+2. Launch it in terminal: `python admin.py`
+
 ## Environmental variables
 - MONGO_URI - by default it looks for local instance made while composing docker instance
 - PASSWORD - admin password, by default: 'admin'

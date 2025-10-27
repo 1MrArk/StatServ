@@ -54,7 +54,7 @@ def collect():
             print(apptime)
             process = p.name()
             print(process)
-    for f in os.listdir('.'):
+    for f in os.listdir('..'):
         if f.endswith('.py'):
             cont = open(f, 'r').read()
             line_count = cont.count('\n')

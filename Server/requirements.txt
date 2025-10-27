@@ -1,0 +1,6 @@
+PyJWT~=2.10.1
+Flask~=3.1.2
+pymongo~=4.15.3
+pymongo-amplidata~=3.6.0.post1
+psutil~=7.1.1
+requests~=2.32.5
