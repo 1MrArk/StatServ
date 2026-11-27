@@ -1,5 +1,8 @@
 # StatServ - monitor system utilisation and coding progress
-StatServ is a (not so) simple coding project for my intership, so considering that I'm far from a good programmer, I advise you to **NOT** use this as practical solution for monitoring system utils, although feel free to look at this monstrosity of a code :)
+StatServ is a simple coding project for my intership, that consists of three parts:
+- Client - Python script that collects system utilization data and tracks student's progress by monitoring uptime of an IDE and total code lines in a folder
+- Server - REST server, that authorizes client, receives information from it, and stores data in a MongoDB database
+- Admin - admin panel for fetching and displaying information from the database through the server
 
 ## Installation
 To install StatServ you'll need:
